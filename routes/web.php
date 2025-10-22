@@ -17,4 +17,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Rutas de administrador (protegidas por middleware auth y rol)
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    // Items CRUD
+    Route::resource('items', App\Http\Controllers\Admin\ItemController::class);
+    Route::post('items/preview', [App\Http\Controllers\Admin\ItemController::class, 'preview'])
+        ->name('items.preview');
+});
+
 require __DIR__.'/auth.php';
