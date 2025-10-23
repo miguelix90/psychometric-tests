@@ -23,6 +23,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('items', App\Http\Controllers\Admin\ItemController::class);
     Route::post('items/preview', [App\Http\Controllers\Admin\ItemController::class, 'preview'])
         ->name('items.preview');
+
+    // Batteries CRUD
+    Route::resource('batteries', App\Http\Controllers\Admin\BatteryController::class);
 });
 
 require __DIR__.'/auth.php';
