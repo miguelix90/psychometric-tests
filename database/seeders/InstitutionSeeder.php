@@ -21,6 +21,7 @@ class InstitutionSeeder extends Seeder
             'contact_name' => 'Administrador General',
             'email' => 'admin@sociescuela.com',
             'available_uses' => 999999,
+            'access_code' => Institution::generateUniqueAccessCode(),
         ]);
 
         // Centro Educativo de prueba
@@ -30,6 +31,7 @@ class InstitutionSeeder extends Seeder
             'contact_name' => 'Director Demo',
             'email' => 'contacto@iesdemo.edu',
             'available_uses' => 100,
+            'access_code' => Institution::generateUniqueAccessCode(),
         ]);
 
         // Centro Profesional de prueba
@@ -39,6 +41,7 @@ class InstitutionSeeder extends Seeder
             'contact_name' => 'Psicólogo Responsable',
             'email' => 'info@centropsicologico.com',
             'available_uses' => 50,
+            'access_code' => Institution::generateUniqueAccessCode(),
         ]);
 
         // Asociación de prueba
@@ -48,6 +51,7 @@ class InstitutionSeeder extends Seeder
             'contact_name' => 'Presidente Asociación',
             'email' => 'contacto@asociacionorientadores.org',
             'available_uses' => 75,
+            'access_code' => Institution::generateUniqueAccessCode(),
         ]);
     }
 }

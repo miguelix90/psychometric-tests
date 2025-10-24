@@ -28,4 +28,10 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('batteries', App\Http\Controllers\Admin\BatteryController::class);
 });
 
+// Rutas de profesor (protegidas por middleware auth)
+Route::middleware(['auth'])->prefix('professor')->name('professor.')->group(function () {
+    // Participants CRUD
+    Route::resource('participants', App\Http\Controllers\Professor\ParticipantController::class);
+});
+
 require __DIR__.'/auth.php';

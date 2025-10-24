@@ -8,9 +8,6 @@ use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         // Reset cached roles and permissions
@@ -46,6 +43,7 @@ class RoleSeeder extends Seeder
             // Gestión de participantes
             'participants.view-own',
             'participants.view-institution',
+            'participants.view-all', // NUEVO: para que admin vea TODOS
             'participants.create',
             'participants.edit',
             'participants.delete',

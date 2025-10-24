@@ -27,6 +27,14 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
         $admin->assignRole('Administrador');
+        $mah = User::create([
+            'name' => 'Miguel A. Huete',
+            'email' => 'miguelix90@hotmail.com',
+            'password' => Hash::make('password'),
+            'institution_id' => $sociescuela->id,
+            'email_verified_at' => now(),
+        ]);
+        $mah->assignRole('Administrador');
 
         // ===== RESPONSABLE (IES Demo) =====
         $responsable = User::create([

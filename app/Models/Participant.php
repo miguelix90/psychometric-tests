@@ -5,23 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\Sex;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class Participant extends Model
 {
-    /** @use HasFactory<\Database\Factories\ParticipantFactory> */
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-        'code',
         'age_months',
         'sex',
+        'iug',
+        'iuc',
         'institution_id',
         'created_by_user_id'
     ];
@@ -34,20 +28,51 @@ class Participant extends Model
     }
 
     /**
-     * Generar código único para el participante
+     * Generar IUG (Identificador Único Global)
+     * Formato: [3_letras_apellido][mes_2_digitos][3_letras_nombre][dia_2_digitos]
+     * Ejemplo: García, Juan, 15/03/2010 → GAR03JUA15 → hash
      */
-    public static function generateUniqueCode(): string
+    public static function generateIUG(string $firstName, string $lastName, string $birthDate): string
     {
-        do {
-            $code = strtoupper(Str::random(8));
-        } while (self::where('code', $code)->exists());
+        $date = Carbon::parse($birthDate);
 
-        return $code;
+        // Extraer componentes
+        $lastNamePart = strtoupper(substr($lastName, 0, 3));
+        $month = $date->format('m');
+        $firstNamePart = strtoupper(substr($firstName, 0, 3));
+        $day = $date->format('d');
+
+        // Construir el código base
+        $baseCode = $lastNamePart . $month . $firstNamePart . $day;
+
+        // Codificar con hash SHA-256 (no reversible)
+        return hash('sha256', $baseCode);
+    }
+
+    /**
+     * Generar IUC (Identificador Único Centro)
+     * Formato: [codigo_centro][3_letras_apellido][mes][3_letras_nombre][dia]
+     * Ejemplo: AGT3327GAR03JUA15 → hash
+     */
+    public static function generateIUC(string $accessCode, string $firstName, string $lastName, string $birthDate): string
+    {
+        $date = Carbon::parse($birthDate);
+
+        // Extraer componentes
+        $lastNamePart = strtoupper(substr($lastName, 0, 3));
+        $month = $date->format('m');
+        $firstNamePart = strtoupper(substr($firstName, 0, 3));
+        $day = $date->format('d');
+
+        // Construir el código base con access_code al principio
+        $baseCode = $accessCode . $lastNamePart . $month . $firstNamePart . $day;
+
+        // Codificar con hash SHA-256 (no reversible)
+        return hash('sha256', $baseCode);
     }
 
     /**
      * Calcular edad en meses a partir de fecha de nacimiento
-     * (útil para cuando se registra el participante)
      */
     public static function calculateAgeInMonths(string $birthDate): int
     {
@@ -94,10 +119,10 @@ class Participant extends Model
     }
 
     /**
-     * Relación con sesiones de test
+     * Relación con sesiones de test (comentado hasta implementar)
      */
-    public function testSessions()
-    {
-        return $this->hasMany(TestSession::class);
-    }
+    // public function testSessions()
+    // {
+    //     return $this->hasMany(TestSession::class);
+    // }
 }
