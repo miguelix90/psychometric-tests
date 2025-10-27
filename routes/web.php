@@ -34,4 +34,27 @@ Route::middleware(['auth'])->prefix('professor')->name('professor.')->group(func
     Route::resource('participants', App\Http\Controllers\Professor\ParticipantController::class);
 });
 
+// ====================================================================
+// RUTAS PÚBLICAS PARA PARTICIPANTES (SIN AUTENTICACIÓN)
+// ====================================================================
+
+// Ruta de acceso con código de institución
+Route::get('/acceso_cuestionario/{access_code}', [App\Http\Controllers\ParticipantAccessController::class, 'showAccessForm'])
+    ->name('participant.access.form');
+
+// Validar IUC y dar acceso
+Route::post('/acceso_cuestionario/{access_code}', [App\Http\Controllers\ParticipantAccessController::class, 'validateAccess'])
+    ->name('participant.access.validate');
+
+// Rutas protegidas para participantes (con sesión, sin autenticación)
+Route::middleware(['participant.session'])->prefix('participante')->name('participant.')->group(function () {
+    // Dashboard del participante
+    Route::get('/inicio', [App\Http\Controllers\ParticipantAccessController::class, 'dashboard'])
+        ->name('dashboard');
+
+    // Cerrar sesión
+    Route::post('/salir', [App\Http\Controllers\ParticipantAccessController::class, 'logout'])
+        ->name('logout');
+});
+
 require __DIR__.'/auth.php';
