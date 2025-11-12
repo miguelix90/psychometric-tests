@@ -47,9 +47,54 @@ class ItemController extends Controller
         return view('admin.items.create', compact('tasks'));
     }
 
+
     /**
-     * Store a newly created resource in storage.
+     * Display the specified resource.
      */
+    public function show(Item $item)
+    {
+        $item->load('task');
+        return view('admin.items.show', compact('item'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Item $item)
+    {
+        $tasks = Task::orderBy('name')->get();
+        return view('admin.items.edit', compact('item', 'tasks'));
+    }
+
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Item $item)
+    {
+        // Eliminar las imágenes del storage
+        if (isset($item->content['matrix_image']) && Storage::disk('public')->exists($item->content['matrix_image'])) {
+            Storage::disk('public')->delete($item->content['matrix_image']);
+        }
+
+        if (isset($item->content['options']) && is_array($item->content['options'])) {
+            foreach ($item->content['options'] as $optionPath) {
+                if (Storage::disk('public')->exists($optionPath)) {
+                    Storage::disk('public')->delete($optionPath);
+                }
+            }
+        }
+
+        $item->delete();
+
+        return redirect()
+            ->route('admin.items.index')
+            ->with('success', 'Ítem eliminado correctamente.');
+    }
+
+    /**
+ * Store a newly created resource in storage.
+ */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -76,12 +121,12 @@ class ItemController extends Controller
             $content['matrix_image'] = $matrixPath;
         }
 
-        // Subir opciones de respuesta
+        // ⭐ CORRECCIÓN: Solo agregar opciones que tienen archivo
         $content['options'] = [];
         for ($i = 1; $i <= 6; $i++) {
             if ($request->hasFile("option_$i")) {
                 $optionPath = $request->file("option_$i")->store('items/options', 'public');
-                $content['options'][$i] = $optionPath;
+                $content['options'][(string)$i] = $optionPath; // Asegurar que la clave es string
             }
         }
 
@@ -101,24 +146,6 @@ class ItemController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(Item $item)
-    {
-        $item->load('task');
-        return view('admin.items.show', compact('item'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Item $item)
-    {
-        $tasks = Task::orderBy('name')->get();
-        return view('admin.items.edit', compact('item', 'tasks'));
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Item $item)
@@ -134,12 +161,18 @@ class ItemController extends Controller
             'option_4' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'option_5' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'option_6' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
+            'delete_option_1' => 'nullable|boolean',
+            'delete_option_2' => 'nullable|boolean',
+            'delete_option_3' => 'nullable|boolean',
+            'delete_option_4' => 'nullable|boolean',
+            'delete_option_5' => 'nullable|boolean',
+            'delete_option_6' => 'nullable|boolean',
             'correct_answer' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
 
         // Preparar el contenido JSON (mantener el existente)
-        $content = $item->content;
+        $content = $item->content ?? [];
 
         // Actualizar imagen de la matriz si se sube una nueva
         if ($request->hasFile('matrix_image')) {
@@ -151,19 +184,31 @@ class ItemController extends Controller
             $content['matrix_image'] = $matrixPath;
         }
 
-        // Actualizar opciones de respuesta si se suben nuevas
+        // ⭐ CORRECCIÓN: Manejar opciones con eliminación
         if (!isset($content['options'])) {
             $content['options'] = [];
         }
 
         for ($i = 1; $i <= 6; $i++) {
-            if ($request->hasFile("option_$i")) {
+            $deleteKey = "delete_option_$i";
+
+            // Si se marcó para eliminar
+            if ($request->has($deleteKey) && $request->input($deleteKey)) {
+                // Eliminar archivo del storage
+                if (isset($content['options'][(string)$i]) && Storage::disk('public')->exists($content['options'][(string)$i])) {
+                    Storage::disk('public')->delete($content['options'][(string)$i]);
+                }
+                // Eliminar del array
+                unset($content['options'][(string)$i]);
+            }
+            // Si se sube nueva imagen
+            elseif ($request->hasFile("option_$i")) {
                 // Eliminar la opción anterior si existe
-                if (isset($content['options'][$i]) && Storage::disk('public')->exists($content['options'][$i])) {
-                    Storage::disk('public')->delete($content['options'][$i]);
+                if (isset($content['options'][(string)$i]) && Storage::disk('public')->exists($content['options'][(string)$i])) {
+                    Storage::disk('public')->delete($content['options'][(string)$i]);
                 }
                 $optionPath = $request->file("option_$i")->store('items/options', 'public');
-                $content['options'][$i] = $optionPath;
+                $content['options'][(string)$i] = $optionPath;
             }
         }
 
@@ -180,30 +225,5 @@ class ItemController extends Controller
         return redirect()
             ->route('admin.items.index')
             ->with('success', 'Ítem actualizado correctamente.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Item $item)
-    {
-        // Eliminar las imágenes del storage
-        if (isset($item->content['matrix_image']) && Storage::disk('public')->exists($item->content['matrix_image'])) {
-            Storage::disk('public')->delete($item->content['matrix_image']);
-        }
-
-        if (isset($item->content['options']) && is_array($item->content['options'])) {
-            foreach ($item->content['options'] as $optionPath) {
-                if (Storage::disk('public')->exists($optionPath)) {
-                    Storage::disk('public')->delete($optionPath);
-                }
-            }
-        }
-
-        $item->delete();
-
-        return redirect()
-            ->route('admin.items.index')
-            ->with('success', 'Ítem eliminado correctamente.');
     }
 }

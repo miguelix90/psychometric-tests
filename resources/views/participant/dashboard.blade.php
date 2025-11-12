@@ -3,132 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel del Participante</title>
+    <title>Dashboard - Participante</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100">
-    <!-- Barra superior -->
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-semibold text-gray-800">
-                        {{ $participant->institution->name }}
-                    </h1>
-                </div>
-                <div class="flex items-center">
-                    <form method="POST" action="{{ route('participant.logout') }}">
-                        @csrf
-                        <button type="submit" class="text-sm text-gray-600 hover:text-gray-900">
-                            Cerrar sesión
-                        </button>
-                    </form>
-                </div>
+    <div class="min-h-screen">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-900">
+                    Panel de Evaluaciones
+                </h1>
+                <form method="POST" action="{{ route('participant.logout') }}">
+                    @csrf
+                    <button type="submit" class="text-sm text-gray-600 hover:text-gray-900">
+                        Salir →
+                    </button>
+                </form>
             </div>
         </div>
-    </nav>
 
-    <div class="min-h-screen py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Mensaje de bienvenida -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">
-                        ¡Bienvenido/a!
-                    </h2>
-                    <p class="text-gray-600">
-                        Has accedido correctamente al sistema de evaluación.
-                    </p>
-                </div>
-            </div>
+        <!-- Content -->
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <!-- Información del participante -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                        Tu Información
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-sm text-gray-600">Código IUC (tu identificador único)</p>
-                            <p class="text-sm font-mono bg-gray-50 p-2 rounded mt-1 break-all">
-                                {{ $participant->iuc }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Edad</p>
-                            <p class="text-base font-semibold text-gray-800 mt-1">
-                                {{ $participant->getFormattedAge() }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Sexo</p>
-                            <p class="text-base font-semibold text-gray-800 mt-1">
-                                {{ $participant->sex->label() }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Institución</p>
-                            <p class="text-base font-semibold text-gray-800 mt-1">
-                                {{ $participant->institution->name }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Próximos pasos / Estado de evaluaciones -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                        Estado de tus Evaluaciones
-                    </h3>
-
-                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                <!-- Mensaje de bienvenida -->
+                @if (session('success'))
+                    <div class="mb-6 bg-green-50 border-l-4 border-green-500 p-4">
                         <div class="flex">
                             <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <p class="text-sm text-blue-700">
-                                    <strong>Próximamente:</strong> Aquí verás las evaluaciones asignadas y podrás comenzar a realizarlas.
-                                </p>
-                                <p class="text-sm text-blue-700 mt-2">
-                                    Esta funcionalidad está en desarrollo. Tu profesor/evaluador te informará cuando puedas comenzar.
-                                </p>
+                                <p class="text-sm text-green-700">{{ session('success') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Información del participante -->
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                    <div class="p-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-2">Tu Información</h2>
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <p class="text-gray-500">Edad</p>
+                                <p class="font-semibold text-gray-900">{{ $participant->getFormattedAge() }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Sexo</p>
+                                <p class="font-semibold text-gray-900">{{ $participant->sex->label() }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Institución</p>
+                                <p class="font-semibold text-gray-900">{{ $participant->institution->name }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Información de privacidad -->
-            <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <svg class="h-5 w-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                        </svg>
-                        Protección de Datos
-                    </h3>
-                    <p class="text-sm text-gray-600">
-                        Tu privacidad es importante. Solo se almacena información anonimizada mediante códigos únicos.
-                        No guardamos nombres, apellidos ni fechas de nacimiento en nuestro sistema.
-                    </p>
+                <!-- Sesiones disponibles -->
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Mis Evaluaciones</h2>
+
+                        @if($testSessions->count() > 0)
+                            <div class="space-y-4">
+                                @foreach($testSessions as $session)
+                                    <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                                        <div class="flex items-start justify-between mb-4">
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-gray-900">
+                                                    {{ $session->battery->name }}
+                                                </h3>
+                                                <p class="text-sm text-gray-600 mt-1">
+                                                    {{ $session->battery->description }}
+                                                </p>
+                                            </div>
+                                            <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                                {{ $session->status->color() === 'gray' ? 'bg-gray-100 text-gray-800' : '' }}
+                                                {{ $session->status->color() === 'blue' ? 'bg-blue-100 text-blue-800' : '' }}
+                                                {{ $session->status->color() === 'green' ? 'bg-green-100 text-green-800' : '' }}
+                                                {{ $session->status->color() === 'red' ? 'bg-red-100 text-red-800' : '' }}">
+                                                {{ $session->status->label() }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Información adicional -->
+                                        <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+                                            <div>
+                                                <p class="text-gray-500">Tipo</p>
+                                                <p class="font-semibold text-gray-900">{{ $session->battery->type->label() }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-gray-500">Asignada</p>
+                                                <p class="font-semibold text-gray-900">{{ $session->created_at->format('d/m/Y H:i') }}</p>
+                                            </div>
+                                            @if($session->started_at)
+                                                <div>
+                                                    <p class="text-gray-500">Iniciada</p>
+                                                    <p class="font-semibold text-gray-900">{{ $session->started_at->format('d/m/Y H:i') }}</p>
+                                                </div>
+                                            @endif
+                                            @if($session->completed_at)
+                                                <div>
+                                                    <p class="text-gray-500">Completada</p>
+                                                    <p class="font-semibold text-gray-900">{{ $session->completed_at->format('d/m/Y H:i') }}</p>
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <!-- Acciones -->
+                                        <div class="flex items-center gap-3">
+                                            @if($session->isPending())
+                                                <a href="{{ route('test.session.show', $session) }}"
+                                                   class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+                                                    Iniciar Evaluación
+                                                </a>
+                                                <p class="text-sm text-gray-500">
+                                                    {{ $session->battery->tasks->count() }} tareas por completar
+                                                </p>
+                                            @elseif($session->isInProgress())
+                                                <a href="{{ route('test.session.show', $session) }}"
+                                                   class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+                                                    Continuar Evaluación
+                                                </a>
+                                                <p class="text-sm text-gray-500">
+                                                    Progreso en curso...
+                                                </p>
+                                            @elseif($session->isCompleted())
+                                                <span class="text-green-600 font-semibold flex items-center">
+                                                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Evaluación Completada
+                                                </span>
+                                            @elseif($session->isAbandoned())
+                                                <span class="text-red-600 font-semibold flex items-center">
+                                                    <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Sesión Abandonada
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No hay evaluaciones asignadas</h3>
+                                <p class="mt-1 text-sm text-gray-500">
+                                    Contacta con tu profesor para que te asigne una evaluación.
+                                </p>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-sm text-gray-500">
-                Sistema de Evaluación Psicométrica Online
-            </p>
-        </div>
-    </footer>
 </body>
 </html>

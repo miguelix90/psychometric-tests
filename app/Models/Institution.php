@@ -79,4 +79,12 @@ class Institution extends Model
     {
         return $this->hasMany(Participant::class);
     }
+
+    /**
+     * Relación con sesiones de test
+     */
+    public function testSessions()
+    {
+        return $this->hasMany(TestSession::class);
+    }
 }

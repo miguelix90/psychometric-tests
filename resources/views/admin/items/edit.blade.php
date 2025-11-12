@@ -4,9 +4,21 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Editar Ítem') }}: {{ $item->code }}
             </h2>
-            <a href="{{ route('admin.items.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                Volver al Listado
-            </a>
+            <div class="flex space-x-2">
+                @if($item->is_active)
+                    <a href="{{ route('admin.demo.item.start', $item) }}"
+                    class="inline-flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded text-sm">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Demo
+                    </a>
+                @endif
+                <a href="{{ route('admin.items.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                    Volver al Listado
+                </a>
+            </div>
         </div>
     </x-slot>
 
@@ -102,23 +114,39 @@
 
                                 @for($i = 1; $i <= 6; $i++)
                                     <div class="mb-3 pb-3 border-b border-gray-200 last:border-b-0">
-                                        <label for="option_{{ $i }}" class="block text-sm font-medium text-gray-600">Opción {{ $i }}</label>
+                                        <div class="flex items-center justify-between mb-2">
+                                            <label for="option_{{ $i }}" class="block text-sm font-medium text-gray-600">
+                                                Opción {{ $i }}
+                                            </label>
+
+                                            @if(isset($item->content['options'][$i]))
+                                                <label class="flex items-center text-sm text-red-600 cursor-pointer">
+                                                    <input type="checkbox"
+                                                        name="delete_option_{{ $i }}"
+                                                        value="1"
+                                                        class="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-500 focus:ring-red-500 mr-2">
+                                                    <span>Eliminar esta opción</span>
+                                                </label>
+                                            @endif
+                                        </div>
 
                                         @if(isset($item->content['options'][$i]))
                                             <div class="mt-2 mb-2">
                                                 <p class="text-xs text-gray-500 mb-1">Imagen actual:</p>
-                                                <img src="{{ asset('storage/' . $item->content['options'][$i]) }}" alt="Opción {{ $i }} actual" class="max-w-xs rounded border">
+                                                <img src="{{ asset('storage/' . $item->content['options'][$i]) }}"
+                                                    alt="Opción {{ $i }} actual"
+                                                    class="max-w-xs rounded border">
                                             </div>
                                         @endif
 
                                         <input type="file" name="option_{{ $i }}" id="option_{{ $i }}" accept="image/*"
-                                               class="mt-1 block w-full text-sm text-gray-500
-                                                      file:mr-4 file:py-2 file:px-4
-                                                      file:rounded file:border-0
-                                                      file:text-sm file:font-semibold
-                                                      file:bg-green-50 file:text-green-700
-                                                      hover:file:bg-green-100
-                                                      @error('option_'.$i) border-red-500 @enderror">
+                                            class="mt-1 block w-full text-sm text-gray-500
+                                                    file:mr-4 file:py-2 file:px-4
+                                                    file:rounded file:border-0
+                                                    file:text-sm file:font-semibold
+                                                    file:bg-green-50 file:text-green-700
+                                                    hover:file:bg-green-100
+                                                    @error('option_'.$i) border-red-500 @enderror">
                                         <p class="mt-1 text-sm text-gray-500">
                                             {{ isset($item->content['options'][$i]) ? 'Sube una nueva imagen para reemplazar la actual' : 'Sube una imagen para esta opción' }}
                                         </p>

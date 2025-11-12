@@ -15,6 +15,52 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    {{-- Enlaces para ADMINISTRADORES --}}
+                    @if(Auth::user()->hasRole('Administrador'))
+                        <x-nav-link :href="route('admin.items.index')" :active="request()->routeIs('admin.items.*')">
+                            {{ __('Ítems') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.batteries.index')" :active="request()->routeIs('admin.batteries.*')">
+                            {{ __('Baterías') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.institutions.index')" :active="request()->routeIs('admin.institutions.*')">
+                            {{ __('Instituciones') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('admin.tasks.index')" :active="request()->routeIs('admin.tasks.*')">
+                            {{ __('Tareas') }}
+                        </x-nav-link>
+                    @endif
+
+                    {{-- Enlaces para PROFESORES y RESPONSABLES --}}
+                    @if(Auth::user()->hasRole(['Profesor', 'Responsable', 'Administrador']))
+                        <x-nav-link :href="route('professor.participants.index')" :active="request()->routeIs('professor.participants.*')">
+                            {{ __('Participantes') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('professor.battery-codes.index')" :active="request()->routeIs('professor.battery-codes.*')">
+                            {{ __('Códigos') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('professor.test-sessions.index')" :active="request()->routeIs('professor.test-sessions.*')">
+                            {{ __('Sesiones') }}
+                        </x-nav-link>
+                    @endif
+
+                    <!-- Información de usos (solo para roles con permiso) -->
+                    @if(Auth::user()->hasRole(['Profesor', 'Responsable', 'Administrador']))
+                        <div class="hidden sm:flex sm:items-center sm:ms-6">
+                            <div class="text-sm text-gray-600 mr-4">
+                                <span class="font-semibold">Usos disponibles:</span>
+                                <span class="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full font-bold">
+                                    {{ Auth::user()->institution->available_uses }}
+                                </span>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -70,6 +116,44 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+
+            {{-- Enlaces para ADMINISTRADORES --}}
+            @if(Auth::user()->hasRole('Administrador'))
+                <x-responsive-nav-link :href="route('admin.items.index')" :active="request()->routeIs('admin.items.*')">
+                    {{ __('Ítems') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.batteries.index')" :active="request()->routeIs('admin.batteries.*')">
+                    {{ __('Baterías') }}
+                </x-responsive-nav-link>
+            @endif
+
+            {{-- Enlaces para PROFESORES y RESPONSABLES --}}
+            @if(Auth::user()->hasRole(['Profesor', 'Responsable', 'Administrador']))
+                <x-responsive-nav-link :href="route('professor.participants.index')" :active="request()->routeIs('professor.participants.*')">
+                    {{ __('Participantes') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('professor.battery-codes.index')" :active="request()->routeIs('professor.battery-codes.*')">
+                    {{ __('Códigos') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('professor.test-sessions.index')" :active="request()->routeIs('professor.test-sessions.*')">
+                    {{ __('Sesiones') }}
+                </x-responsive-nav-link>
+            @endif
+
+            <!-- Información de usos (solo para roles con permiso) -->
+            @if(Auth::user()->hasRole(['Profesor', 'Responsable', 'Administrador']))
+                <div class="hidden sm:flex sm:items-center sm:ms-6">
+                    <div class="text-sm text-gray-600 mr-4">
+                        <span class="font-semibold">Usos disponibles:</span>
+                        <span class="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full font-bold">
+                            {{ Auth::user()->institution->available_uses }}
+                        </span>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

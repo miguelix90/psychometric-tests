@@ -2,12 +2,18 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Detalle del Participante') }}
+                Detalle del Participante
             </h2>
-            <a href="{{ route('professor.participants.index') }}"
-               class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                Volver
-            </a>
+            <div class="flex gap-2">
+                <a href="{{ route('professor.participants.assign-battery', $participant) }}"
+                class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    Asignar Batería
+                </a>
+                <a href="{{ route('professor.participants.index') }}"
+                class="text-gray-600 hover:text-gray-900">
+                    ← Volver
+                </a>
+            </div>
         </div>
     </x-slot>
 

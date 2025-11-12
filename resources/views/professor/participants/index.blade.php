@@ -141,6 +141,13 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                         <a href="{{ route('professor.participants.show', $participant) }}"
                                            class="text-blue-600 hover:text-blue-900">Ver</a>
+                                        <a href="{{ route('professor.participants.assign-battery', $participant) }}"
+                                            class="text-green-600 hover:text-green-900"
+                                            title="Asignar batería">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                                </svg>
+                                            </a>
                                     </td>
                                 </tr>
                             @empty

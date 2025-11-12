@@ -8,6 +8,8 @@ use App\Models\Institution;
 use App\Enums\Sex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Battery;
+use App\Models\TestSession;
 
 class ParticipantController extends Controller
 {
@@ -193,5 +195,118 @@ public function store(Request $request)
         return redirect()
             ->route('professor.participants.index')
             ->with('success', 'Participante eliminado correctamente.');
+    }
+
+    /**
+     * Show form to assign battery to participant
+     */
+    public function assignBattery(Participant $participant)
+    {
+        $user = Auth::user();
+
+        // Verificar permisos
+        if (!$user->hasPermissionTo('participants.view-all') &&
+            !$user->hasPermissionTo('participants.view-institution') &&
+            $participant->created_by_user_id !== $user->id) {
+            abort(403, 'No tienes permisos para asignar baterías a este participante.');
+        }
+
+        // Verificar institución para responsables
+        if ($user->hasPermissionTo('participants.view-institution') &&
+            !$user->hasPermissionTo('participants.view-all') &&
+            $participant->institution_id !== $user->institution_id) {
+            abort(403, 'No tienes permisos para asignar baterías a este participante.');
+        }
+
+        // Obtener baterías activas
+        $batteries = Battery::where('is_active', true)->orderBy('name')->get();
+
+        // Obtener sesiones activas del participante (para mostrar cuáles ya tiene)
+        $activeSessions = TestSession::where('participant_id', $participant->id)
+            ->whereIn('status', [\App\Enums\SessionStatus::PENDING, \App\Enums\SessionStatus::IN_PROGRESS])
+            ->with('battery')
+            ->get();
+
+        return view('professor.participants.assign-battery', compact('participant', 'batteries', 'activeSessions'));
+    }
+
+    /**
+     * Store battery assignment
+     */
+    public function storeAssignment(Request $request, Participant $participant)
+    {
+        $user = Auth::user();
+
+        // Verificar permisos
+        if (!$user->hasPermissionTo('participants.view-all') &&
+            !$user->hasPermissionTo('participants.view-institution') &&
+            $participant->created_by_user_id !== $user->id) {
+            abort(403, 'No tienes permisos para asignar baterías a este participante.');
+        }
+
+        // Verificar institución para responsables
+        if ($user->hasPermissionTo('participants.view-institution') &&
+            !$user->hasPermissionTo('participants.view-all') &&
+            $participant->institution_id !== $user->institution_id) {
+            abort(403, 'No tienes permisos para asignar baterías a este participante.');
+        }
+
+        $validated = $request->validate([
+            'battery_id' => 'required|exists:batteries,id',
+        ], [
+            'battery_id.required' => 'Debes seleccionar una batería.',
+            'battery_id.exists' => 'La batería seleccionada no existe.',
+        ]);
+
+        $battery = Battery::findOrFail($validated['battery_id']);
+
+        // Verificar que la batería esté activa
+        if (!$battery->is_active) {
+            return back()->withErrors(['battery_id' => 'Esta batería no está activa.'])->withInput();
+        }
+
+        // Verificar que no tenga sesión activa de esta batería
+        $existingSession = TestSession::where('participant_id', $participant->id)
+            ->where('battery_id', $battery->id)
+            ->whereIn('status', [\App\Enums\SessionStatus::PENDING, \App\Enums\SessionStatus::IN_PROGRESS])
+            ->first();
+
+        if ($existingSession) {
+            return back()->withErrors([
+                'battery_id' => 'El participante ya tiene una sesión pendiente o en progreso de esta batería.'
+            ])->withInput();
+        }
+
+        $institution = $participant->institution;
+
+        // Verificar que la institución tenga usos disponibles
+        if ($institution->available_uses <= 0) {
+            return back()->withErrors([
+                'error' => 'La institución no tiene usos disponibles. Contacta con el administrador.'
+            ])->withInput();
+        }
+
+        // Crear TestSession
+        $testSession = TestSession::create([
+            'participant_id' => $participant->id,
+            'battery_id' => $battery->id,
+            'institution_id' => $institution->id,
+            'assigned_by_user_id' => $user->id, // Asignada por el profesor
+            'battery_code_id' => null, // No es por código
+            'status' => \App\Enums\SessionStatus::PENDING,
+            'started_at' => null,
+            'completed_at' => null,
+            'use_deducted' => false,
+        ]);
+
+        // INICIALIZACION DE TAREAS
+        $testSession->initializeTasks();
+
+        // Descontar uso de la institución
+        $testSession->deductUse();
+
+        return redirect()
+            ->route('professor.participants.show', $participant)
+            ->with('success', "Batería '{$battery->name}' asignada correctamente al participante.");
     }
 }
