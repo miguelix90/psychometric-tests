@@ -19,14 +19,39 @@ Route::middleware('auth')->group(function () {
 
 // Rutas de administrador (protegidas por middleware auth y rol)
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
-    // Items CRUD
-    Route::resource('items', App\Http\Controllers\Admin\ItemController::class);
-    Route::post('items/preview', [App\Http\Controllers\Admin\ItemController::class, 'preview'])
-        ->name('items.preview');
+
 
     // Tasks (solo index y show, no CRUD completo)
     Route::get('tasks', [App\Http\Controllers\Admin\TaskController::class, 'index'])->name('tasks.index');
     Route::get('tasks/{task}', [App\Http\Controllers\Admin\TaskController::class, 'show'])->name('tasks.show');
+
+    // Matrix Items - CRUD específico para items tipo Matrix
+    Route::get('tasks/{task}/items', [App\Http\Controllers\Admin\MatrixItemController::class, 'index'])
+        ->name('tasks.items.index');
+    Route::get('tasks/{task}/items/create', [App\Http\Controllers\Admin\MatrixItemController::class, 'create'])
+        ->name('tasks.items.create');
+    Route::post('tasks/{task}/items', [App\Http\Controllers\Admin\MatrixItemController::class, 'store'])
+        ->name('tasks.items.store');
+    Route::get('tasks/{task}/items/{item}/edit', [App\Http\Controllers\Admin\MatrixItemController::class, 'edit'])
+        ->name('tasks.items.edit');
+    Route::put('tasks/{task}/items/{item}', [App\Http\Controllers\Admin\MatrixItemController::class, 'update'])
+        ->name('tasks.items.update');
+    Route::delete('tasks/{task}/items/{item}', [App\Http\Controllers\Admin\MatrixItemController::class, 'destroy'])
+        ->name('tasks.items.destroy');
+
+    // Spatial Items - CRUD específico para items tipo Spatial
+    Route::get('tasks/{task}/items-spatial', [App\Http\Controllers\Admin\SpatialItemController::class, 'index'])
+        ->name('tasks.items.spatial.index');
+    Route::get('tasks/{task}/items-spatial/create', [App\Http\Controllers\Admin\SpatialItemController::class, 'create'])
+        ->name('tasks.items.spatial.create');
+    Route::post('tasks/{task}/items-spatial', [App\Http\Controllers\Admin\SpatialItemController::class, 'store'])
+        ->name('tasks.items.spatial.store');
+    Route::get('tasks/{task}/items-spatial/{item}/edit', [App\Http\Controllers\Admin\SpatialItemController::class, 'edit'])
+        ->name('tasks.items.spatial.edit');
+    Route::put('tasks/{task}/items-spatial/{item}', [App\Http\Controllers\Admin\SpatialItemController::class, 'update'])
+        ->name('tasks.items.spatial.update');
+    Route::delete('tasks/{task}/items-spatial/{item}', [App\Http\Controllers\Admin\SpatialItemController::class, 'destroy'])
+        ->name('tasks.items.spatial.destroy');
 
     // Batteries CRUD
     Route::resource('batteries', App\Http\Controllers\Admin\BatteryController::class);
@@ -134,6 +159,9 @@ Route::middleware(['auth'])->prefix('admin/demo')->name('admin.demo.')->group(fu
     Route::get('/item/{item}/start', [App\Http\Controllers\Admin\DemoController::class, 'startItem'])->name('item.start');
     Route::get('/item/matrix/{item}', [App\Http\Controllers\Admin\DemoController::class, 'showItemMatrix'])->name('item.matrix');
     Route::post('/item/{item}/response', [App\Http\Controllers\Admin\DemoController::class, 'submitItemResponse'])->name('item.response');
+    // Demo de Spatial (para demo de tarea)
+    Route::get('/spatial/item/{itemId}', [App\Http\Controllers\Admin\DemoController::class, 'showSpatialItem'])->name('spatial.item');
+    Route::post('/spatial/item/{itemId}/response', [App\Http\Controllers\Admin\DemoController::class, 'submitSpatialResponse'])->name('spatial.response');
 
     // Demo de BATERÍA Completa (Nivel 3) ← AGREGAR AQUÍ
     Route::get('/battery/{battery}/start', [App\Http\Controllers\Admin\DemoController::class, 'startBattery'])->name('battery.start');
@@ -142,6 +170,7 @@ Route::middleware(['auth'])->prefix('admin/demo')->name('admin.demo.')->group(fu
     Route::get('/battery/task', [App\Http\Controllers\Admin\DemoController::class, 'showBatteryTask'])->name('battery.task.show');
     Route::post('/battery/task/start', [App\Http\Controllers\Admin\DemoController::class, 'startBatteryTask'])->name('battery.task.start');
     Route::get('/battery/matrix/item/{itemId}', [App\Http\Controllers\Admin\DemoController::class, 'showBatteryMatrixItem'])->name('battery.matrix.item');
+    Route::get('/battery/spatial/item/{itemId}', [App\Http\Controllers\Admin\DemoController::class, 'showBatterySpatialItem'])->name('battery.spatial.item');
     Route::post('/battery/item/{itemId}/response', [App\Http\Controllers\Admin\DemoController::class, 'submitBatteryResponse'])->name('battery.response');
     Route::get('/battery/completed', [App\Http\Controllers\Admin\DemoController::class, 'batteryCompleted'])->name('battery.completed');
 
@@ -155,3 +184,4 @@ require __DIR__.'/auth.php';
 
 /*RUTAS ESPECIFICAS POR TIPO DE TEST*/
 require __DIR__.'/test-types/matrix.php';
+require __DIR__.'/test-types/spatial.php';

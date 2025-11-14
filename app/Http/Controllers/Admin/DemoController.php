@@ -9,6 +9,7 @@ use App\Models\Battery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
+use App\Enums\TaskType;
 
 class DemoController extends Controller
 {
@@ -88,6 +89,12 @@ class DemoController extends Controller
             ]);
         }
 
+        if ($task->isSpatial()) {
+            return redirect()->route('admin.demo.spatial.item', [
+                'itemId' => $firstItem->id
+            ]);
+        }
+
         // Agregar otros tipos cuando se implementen
         return redirect()->route('admin.demo.task.show')
             ->with('error', 'Tipo de tarea no soportado en demo aún.');
@@ -130,6 +137,42 @@ class DemoController extends Controller
     }
 
     /**
+     * Mostrar item Spatial en modo demo (REUTILIZA VISTA EXISTENTE)
+     */
+    public function showSpatialItem($itemId)
+    {
+        if (!Session::has('demo_mode')) {
+            abort(403, 'Sesión demo no válida.');
+        }
+
+        $taskId = Session::get('demo_task_id');
+        $task = Task::findOrFail($taskId);
+        $item = Item::where('task_id', $taskId)->where('id', $itemId)->firstOrFail();
+
+        // Calcular progreso
+        $allItems = $task->activeItems()->orderedByDifficulty()->get();
+        $totalItems = $allItems->count();
+        $currentItemNumber = $allItems->search(function($i) use ($item) {
+            return $i->id === $item->id;
+        }) + 1;
+
+        // Crear objeto simulado de TestSessionTask para compatibilidad
+        $testSessionTask = (object)[
+            'id' => 'demo',
+            'task' => $task,
+            'task_id' => $task->id
+        ];
+
+        // REUTILIZAR LA VISTA EXISTENTE con indicador de modo demo
+        return view('tests.spatial.item', compact(
+            'testSessionTask',
+            'item',
+            'totalItems',
+            'currentItemNumber'
+        ))->with('demoMode', true);
+    }
+
+    /**
      * Guardar respuesta demo (no se guarda en BD)
      */
     public function submitMatrixResponse(Request $request, $itemId)
@@ -163,23 +206,58 @@ class DemoController extends Controller
         return $this->determineNextAction($task, $item);
     }
 
-    /**
-     * Resetear demo
-     */
-    public function reset()
-    {
-        $taskId = Session::get('demo_task_id');
-
-        if (!$taskId) {
-            return redirect()->route('admin.items.index');
-        }
-
-        // Limpiar y reiniciar
-        $this->clearDemoSession();
-
-        return redirect()->route('admin.demo.start', ['task' => $taskId])
-            ->with('success', 'Demo reseteado correctamente.');
+/**
+ * Guardar respuesta demo Spatial (no se guarda en BD)
+ */
+public function submitSpatialResponse(Request $request, $itemId)
+{
+    if (!Session::has('demo_mode')) {
+        return response()->json(['success' => false, 'message' => 'Sesión demo no válida'], 403);
     }
+
+    // CAMBIAR ESTA VALIDACIÓN
+    $validated = $request->validate([
+        'answer' => 'required|string|in:1,2,3,4,5,6',
+        'response_time_ms' => 'required|integer|min:0'
+    ]);
+
+    $taskId = Session::get('demo_task_id');
+    $task = Task::findOrFail($taskId);
+    $item = Item::findOrFail($itemId);
+
+    // Guardar respuesta en sesión (temporal, no en BD)
+    $responses = Session::get('demo_responses', []);
+    $responses[] = [
+        'task_id' => $taskId,
+        'item_id' => $itemId,
+        'answer' => $validated['answer'],
+        'is_correct' => ($validated['answer'] === $item->correct_answer),
+        'response_time_ms' => $validated['response_time_ms'],
+        'timestamp' => now()->toDateTimeString()
+    ];
+    Session::put('demo_responses', $responses);
+
+    // Determinar siguiente item
+    return $this->determineNextAction($task, $item);
+}
+
+    /**
+ * Resetear demo
+ */
+public function reset()
+{
+    $taskId = Session::get('demo_task_id');
+
+    if (!$taskId) {
+        return redirect()->route('admin.tasks.index');
+    }
+
+    // Limpiar y reiniciar
+    $this->clearDemoSession();
+
+    return redirect()->route('admin.demo.start', ['task' => $taskId])
+        ->with('success', 'Demo reseteado correctamente.');
+}
 
     /**
      * Salir del modo demo
@@ -190,11 +268,14 @@ class DemoController extends Controller
         $this->clearDemoSession();
 
         if ($taskId) {
-            return redirect()->route('admin.items.index')
-                ->with('success', 'Has salido del modo demo.');
+            $task = Task::find($taskId);
+            if ($task) {
+                return redirect()->route('admin.tasks.show', $task)
+                    ->with('success', 'Has salido del modo demo.');
+            }
         }
 
-        return redirect()->route('admin.items.index');
+        return redirect()->route('admin.tasks.index');
     }
 
     /**
@@ -491,6 +572,12 @@ class DemoController extends Controller
             ]);
         }
 
+        if ($task->isSpatial()) {
+            return redirect()->route('admin.demo.battery.spatial.item', [
+            'itemId' => $firstItem->id
+            ]);
+}
+
         // Agregar otros tipos cuando se implementen
         return redirect()->route('admin.demo.battery.task.show')
             ->with('error', 'Tipo de tarea no soportado en demo aún.');
@@ -533,38 +620,75 @@ class DemoController extends Controller
     }
 
     /**
-     * Guardar respuesta demo de batería (no se guarda en BD)
+     * Mostrar item Spatial en modo demo de batería
      */
-    public function submitBatteryResponse(Request $request, $itemId)
+    public function showBatterySpatialItem($itemId)
     {
         if (!Session::has('demo_mode') || Session::get('demo_type') !== 'battery') {
-            return response()->json(['success' => false, 'message' => 'Sesión demo no válida'], 403);
+            abort(403, 'Sesión demo no válida.');
         }
-
-        $validated = $request->validate([
-            'answer' => 'required|string',
-            'response_time_ms' => 'required|integer|min:0'
-        ]);
 
         $taskId = Session::get('demo_current_task_id');
         $task = Task::findOrFail($taskId);
-        $item = Item::findOrFail($itemId);
+        $item = Item::where('task_id', $taskId)->where('id', $itemId)->firstOrFail();
 
-        // Guardar respuesta en sesión (temporal, no en BD)
-        $responses = Session::get('demo_responses', []);
-        $responses[] = [
-            'task_id' => $taskId,
-            'item_id' => $itemId,
-            'answer' => $validated['answer'],
-            'is_correct' => ($validated['answer'] === $item->correct_answer),
-            'response_time_ms' => $validated['response_time_ms'],
-            'timestamp' => now()->toDateTimeString()
+        // Calcular progreso
+        $allItems = $task->activeItems()->orderedByDifficulty()->get();
+        $totalItems = $allItems->count();
+        $currentItemNumber = $allItems->search(function($i) use ($item) {
+            return $i->id === $item->id;
+        }) + 1;
+
+        // Crear objeto simulado de TestSessionTask para compatibilidad
+        $testSessionTask = (object)[
+            'id' => 'demo-battery',
+            'task' => $task,
+            'task_id' => $task->id
         ];
-        Session::put('demo_responses', $responses);
 
-        // Determinar siguiente acción
-        return $this->determineNextActionBattery($task, $item);
+        // REUTILIZAR LA VISTA EXISTENTE con indicador de modo demo
+        return view('tests.spatial.item', compact(
+            'testSessionTask',
+            'item',
+            'totalItems',
+            'currentItemNumber'
+        ))->with('demoMode', true)->with('demoType', 'battery');
     }
+
+/**
+ * Guardar respuesta demo de batería (no se guarda en BD)
+ */
+public function submitBatteryResponse(Request $request, $itemId)
+{
+    if (!Session::has('demo_mode') || Session::get('demo_type') !== 'battery') {
+        return response()->json(['success' => false, 'message' => 'Sesión demo no válida'], 403);
+    }
+
+    // CAMBIAR ESTA VALIDACIÓN
+    $validated = $request->validate([
+        'answer' => 'required|string|regex:/^[1-8]$/',  // Acepta números 1-8
+        'response_time_ms' => 'required|integer|min:0'
+    ]);
+
+    $taskId = Session::get('demo_current_task_id');
+    $task = Task::findOrFail($taskId);
+    $item = Item::findOrFail($itemId);
+
+    // Guardar respuesta en sesión (temporal, no en BD)
+    $responses = Session::get('demo_responses', []);
+    $responses[] = [
+        'task_id' => $taskId,
+        'item_id' => $itemId,
+        'answer' => $validated['answer'],
+        'is_correct' => ($validated['answer'] === $item->correct_answer),
+        'response_time_ms' => $validated['response_time_ms'],
+        'timestamp' => now()->toDateTimeString()
+    ];
+    Session::put('demo_responses', $responses);
+
+    // Determinar siguiente acción
+    return $this->determineNextActionBattery($task, $item);
+}
 
     /**
      * Vista de demo de batería completado
@@ -600,12 +724,17 @@ class DemoController extends Controller
         if ($currentIndex !== false && $currentIndex < $allItems->count() - 1) {
             $nextItem = $allItems[$currentIndex + 1];
 
+            // Determinar URL según tipo de tarea
+            $nextItemUrl = match($task->type) {
+                TaskType::MATRIX => route('admin.demo.battery.matrix.item', ['itemId' => $nextItem->id]),
+                TaskType::SPATIAL => route('admin.demo.battery.spatial.item', ['itemId' => $nextItem->id]),
+                default => route('admin.demo.battery.task.show')
+            };
+
             return response()->json([
                 'success' => true,
                 'next_item' => true,
-                'next_item_url' => route('admin.demo.battery.matrix.item', [
-                    'itemId' => $nextItem->id
-                ])
+                'next_item_url' => $nextItemUrl
             ]);
         }
 
@@ -668,33 +797,38 @@ class DemoController extends Controller
     }
 
     private function determineNextAction($task, $currentItem)
-    {
-        // Obtener todos los items de la tarea
-        $allItems = $task->activeItems()->orderedByDifficulty()->get();
+{
+    // Obtener todos los items de la tarea
+    $allItems = $task->activeItems()->orderedByDifficulty()->get();
 
-        // Buscar índice del item actual
-        $currentIndex = $allItems->search(function($item) use ($currentItem) {
-            return $item->id === $currentItem->id;
-        });
+    // Buscar índice del item actual
+    $currentIndex = $allItems->search(function($item) use ($currentItem) {
+        return $item->id === $currentItem->id;
+    });
 
-        // Si hay siguiente item en esta tarea
-        if ($currentIndex !== false && $currentIndex < $allItems->count() - 1) {
-            $nextItem = $allItems[$currentIndex + 1];
+    // Si hay siguiente item en esta tarea
+    if ($currentIndex !== false && $currentIndex < $allItems->count() - 1) {
+        $nextItem = $allItems[$currentIndex + 1];
 
-            return response()->json([
-                'success' => true,
-                'next_item' => true,
-                'next_item_url' => route('admin.demo.matrix.item', [
-                    'itemId' => $nextItem->id
-                ])
-            ]);
-        }
+        // Determinar URL según tipo de tarea
+        $nextItemUrl = match($task->type) {
+            TaskType::MATRIX => route('admin.demo.matrix.item', ['itemId' => $nextItem->id]),
+            TaskType::SPATIAL => route('admin.demo.spatial.item', ['itemId' => $nextItem->id]),
+            default => route('admin.demo.task.show')
+        };
 
-        // Tarea completada
         return response()->json([
             'success' => true,
-            'demo_completed' => true,
-            'completion_url' => route('admin.demo.completed')
+            'next_item' => true,
+            'next_item_url' => $nextItemUrl
         ]);
     }
+
+    // No hay más items, demo de tarea completado
+    return response()->json([
+        'success' => true,
+        'demo_completed' => true,
+        'completion_url' => route('admin.demo.completed')
+    ]);
+}
 }

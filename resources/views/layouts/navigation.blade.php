@@ -18,9 +18,7 @@
 
                     {{-- Enlaces para ADMINISTRADORES --}}
                     @if(Auth::user()->hasRole('Administrador'))
-                        <x-nav-link :href="route('admin.items.index')" :active="request()->routeIs('admin.items.*')">
-                            {{ __('Ítems') }}
-                        </x-nav-link>
+
 
                         <x-nav-link :href="route('admin.batteries.index')" :active="request()->routeIs('admin.batteries.*')">
                             {{ __('Baterías') }}
@@ -119,9 +117,7 @@
 
             {{-- Enlaces para ADMINISTRADORES --}}
             @if(Auth::user()->hasRole('Administrador'))
-                <x-responsive-nav-link :href="route('admin.items.index')" :active="request()->routeIs('admin.items.*')">
-                    {{ __('Ítems') }}
-                </x-responsive-nav-link>
+
 
                 <x-responsive-nav-link :href="route('admin.batteries.index')" :active="request()->routeIs('admin.batteries.*')">
                     {{ __('Baterías') }}

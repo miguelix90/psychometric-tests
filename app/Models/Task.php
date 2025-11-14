@@ -52,6 +52,14 @@ class Task extends Model
     }
 
     /**
+     * Check if task is spatial type
+     */
+    public function isSpatial(): bool
+    {
+        return $this->type === TaskType::SPATIAL;
+    }
+
+    /**
      * Scope para filtrar por tipo
      */
     public function scopeByType($query, TaskType $type)
@@ -73,5 +81,13 @@ class Task extends Model
     public function scopeSelectionType($query)
     {
         return $query->where('type', TaskType::SELECTION);
+    }
+
+    /**
+     * Scope to filter spatial tasks
+     */
+    public function scopeSpatialType($query)
+    {
+        return $query->where('type', TaskType::SPATIAL);
     }
 }

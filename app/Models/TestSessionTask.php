@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\TestSessionTaskStatus;
 use Illuminate\Database\Eloquent\Model;
 
+
 class TestSessionTask extends Model
 {
     protected $fillable = [
@@ -95,10 +96,7 @@ class TestSessionTask extends Model
                 'testSession' => $this->test_session_id,
                 'testSessionTask' => $this->id
             ]),
-            // \App\Enums\TaskType::SELECTION => route('test.selection.task', [
-            //     'testSession' => $this->test_session_id,
-            //     'testSessionTask' => $this->id
-            // ]),
+            \App\Enums\TaskType::SPATIAL => route('test.spatial.task', ['testSessionTask' => $this->id]),
             default => throw new \Exception("Tipo de tarea no implementado: {$this->task->type->value}")
         };
     }

@@ -8,97 +8,49 @@ use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class ItemController extends Controller
+class MatrixItemController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of items for a specific Matrix task.
      */
-    public function index(Request $request)
+    public function index(Task $task)
     {
-        $query = Item::with('task');
-
-        // Filtrar por tarea si se especifica
-        if ($request->has('task_id') && $request->task_id !== '') {
-            $query->where('task_id', $request->task_id);
+        // Verificar que la tarea sea de tipo Matrix
+        if (!$task->isMatrix()) {
+            abort(404, 'Esta tarea no es de tipo Matrix.');
         }
 
-        // Filtrar por estado activo/inactivo
-        if ($request->has('is_active') && $request->is_active !== '') {
-            $query->where('is_active', $request->is_active);
-        }
+        $items = $task->items()
+            ->orderBy('difficulty')
+            ->paginate(20);
 
-        // Búsqueda por código
-        if ($request->has('search') && $request->search !== '') {
-            $query->where('code', 'like', '%' . $request->search . '%');
-        }
-
-        $items = $query->orderBy('task_id')->orderBy('difficulty')->paginate(20);
-        $tasks = Task::orderBy('name')->get();
-
-        return view('admin.items.index', compact('items', 'tasks'));
+        return view('admin.tasks.items.matrix.index', compact('task', 'items'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show the form for creating a new Matrix item.
      */
-    public function create()
+    public function create(Task $task)
     {
-        $tasks = Task::orderBy('name')->get();
-        return view('admin.items.create', compact('tasks'));
-    }
-
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Item $item)
-    {
-        $item->load('task');
-        return view('admin.items.show', compact('item'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Item $item)
-    {
-        $tasks = Task::orderBy('name')->get();
-        return view('admin.items.edit', compact('item', 'tasks'));
-    }
-
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Item $item)
-    {
-        // Eliminar las imágenes del storage
-        if (isset($item->content['matrix_image']) && Storage::disk('public')->exists($item->content['matrix_image'])) {
-            Storage::disk('public')->delete($item->content['matrix_image']);
+        // Verificar que la tarea sea de tipo Matrix
+        if (!$task->isMatrix()) {
+            abort(404, 'Esta tarea no es de tipo Matrix.');
         }
 
-        if (isset($item->content['options']) && is_array($item->content['options'])) {
-            foreach ($item->content['options'] as $optionPath) {
-                if (Storage::disk('public')->exists($optionPath)) {
-                    Storage::disk('public')->delete($optionPath);
-                }
-            }
-        }
-
-        $item->delete();
-
-        return redirect()
-            ->route('admin.items.index')
-            ->with('success', 'Ítem eliminado correctamente.');
+        return view('admin.tasks.items.matrix.create', compact('task'));
     }
 
     /**
- * Store a newly created resource in storage.
- */
-    public function store(Request $request)
+     * Store a newly created Matrix item in storage.
+     */
+    public function store(Request $request, Task $task)
     {
+        // Verificar que la tarea sea de tipo Matrix
+        if (!$task->isMatrix()) {
+            abort(404, 'Esta tarea no es de tipo Matrix.');
+        }
+
         $validated = $request->validate([
-            'task_id' => 'required|exists:tasks,id',
             'code' => 'required|string|unique:items,code|max:50',
             'difficulty' => 'required|numeric|min:0',
             'matrix_image' => 'required|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
@@ -108,6 +60,8 @@ class ItemController extends Controller
             'option_4' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'option_5' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'option_6' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
+            'option_7' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
+            'option_8' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'correct_answer' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
@@ -121,18 +75,18 @@ class ItemController extends Controller
             $content['matrix_image'] = $matrixPath;
         }
 
-        // ⭐ CORRECCIÓN: Solo agregar opciones que tienen archivo
+        // Agregar opciones que tienen archivo (1-8 para Matrix)
         $content['options'] = [];
-        for ($i = 1; $i <= 6; $i++) {
+        for ($i = 1; $i <= 8; $i++) {
             if ($request->hasFile("option_$i")) {
                 $optionPath = $request->file("option_$i")->store('items/options', 'public');
-                $content['options'][(string)$i] = $optionPath; // Asegurar que la clave es string
+                $content['options'][(string)$i] = $optionPath;
             }
         }
 
         // Crear el ítem
         Item::create([
-            'task_id' => $validated['task_id'],
+            'task_id' => $task->id,
             'code' => $validated['code'],
             'difficulty' => $validated['difficulty'],
             'content' => $content,
@@ -141,17 +95,44 @@ class ItemController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.items.index')
-            ->with('success', 'Ítem creado correctamente.');
+            ->route('admin.tasks.items.index', $task)
+            ->with('success', 'Ítem Matrix creado correctamente.');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Show the form for editing the specified Matrix item.
      */
-    public function update(Request $request, Item $item)
+    public function edit(Task $task, Item $item)
     {
+        // Verificar que la tarea sea de tipo Matrix
+        if (!$task->isMatrix()) {
+            abort(404, 'Esta tarea no es de tipo Matrix.');
+        }
+
+        // Verificar que el item pertenece a esta tarea
+        if ($item->task_id !== $task->id) {
+            abort(404, 'Este ítem no pertenece a la tarea especificada.');
+        }
+
+        return view('admin.tasks.items.matrix.edit', compact('task', 'item'));
+    }
+
+    /**
+     * Update the specified Matrix item in storage.
+     */
+    public function update(Request $request, Task $task, Item $item)
+    {
+        // Verificar que la tarea sea de tipo Matrix
+        if (!$task->isMatrix()) {
+            abort(404, 'Esta tarea no es de tipo Matrix.');
+        }
+
+        // Verificar que el item pertenece a esta tarea
+        if ($item->task_id !== $task->id) {
+            abort(404, 'Este ítem no pertenece a la tarea especificada.');
+        }
+
         $validated = $request->validate([
-            'task_id' => 'required|exists:tasks,id',
             'code' => 'required|string|max:50|unique:items,code,' . $item->id,
             'difficulty' => 'required|numeric|min:0',
             'matrix_image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
@@ -161,12 +142,16 @@ class ItemController extends Controller
             'option_4' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'option_5' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'option_6' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
+            'option_7' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
+            'option_8' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,svg|max:2048',
             'delete_option_1' => 'nullable|boolean',
             'delete_option_2' => 'nullable|boolean',
             'delete_option_3' => 'nullable|boolean',
             'delete_option_4' => 'nullable|boolean',
             'delete_option_5' => 'nullable|boolean',
             'delete_option_6' => 'nullable|boolean',
+            'delete_option_7' => 'nullable|boolean',
+            'delete_option_8' => 'nullable|boolean',
             'correct_answer' => 'required|string|max:255',
             'is_active' => 'boolean',
         ]);
@@ -184,12 +169,12 @@ class ItemController extends Controller
             $content['matrix_image'] = $matrixPath;
         }
 
-        // ⭐ CORRECCIÓN: Manejar opciones con eliminación
+        // Manejar opciones con eliminación (1-8 para Matrix)
         if (!isset($content['options'])) {
             $content['options'] = [];
         }
 
-        for ($i = 1; $i <= 6; $i++) {
+        for ($i = 1; $i <= 8; $i++) {
             $deleteKey = "delete_option_$i";
 
             // Si se marcó para eliminar
@@ -214,7 +199,6 @@ class ItemController extends Controller
 
         // Actualizar el ítem
         $item->update([
-            'task_id' => $validated['task_id'],
             'code' => $validated['code'],
             'difficulty' => $validated['difficulty'],
             'content' => $content,
@@ -223,7 +207,42 @@ class ItemController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.items.index')
-            ->with('success', 'Ítem actualizado correctamente.');
+            ->route('admin.tasks.items.index', $task)
+            ->with('success', 'Ítem Matrix actualizado correctamente.');
+    }
+
+    /**
+     * Remove the specified Matrix item from storage.
+     */
+    public function destroy(Task $task, Item $item)
+    {
+        // Verificar que la tarea sea de tipo Matrix
+        if (!$task->isMatrix()) {
+            abort(404, 'Esta tarea no es de tipo Matrix.');
+        }
+
+        // Verificar que el item pertenece a esta tarea
+        if ($item->task_id !== $task->id) {
+            abort(404, 'Este ítem no pertenece a la tarea especificada.');
+        }
+
+        // Eliminar las imágenes del storage
+        if (isset($item->content['matrix_image']) && Storage::disk('public')->exists($item->content['matrix_image'])) {
+            Storage::disk('public')->delete($item->content['matrix_image']);
+        }
+
+        if (isset($item->content['options']) && is_array($item->content['options'])) {
+            foreach ($item->content['options'] as $optionPath) {
+                if (Storage::disk('public')->exists($optionPath)) {
+                    Storage::disk('public')->delete($optionPath);
+                }
+            }
+        }
+
+        $item->delete();
+
+        return redirect()
+            ->route('admin.tasks.items.index', $task)
+            ->with('success', 'Ítem Matrix eliminado correctamente.');
     }
 }
