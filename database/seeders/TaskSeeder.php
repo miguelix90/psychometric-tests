@@ -41,7 +41,7 @@ class TaskSeeder extends Seeder
             ],
             [
                 'name' => 'Visoespacial',
-                'type' => TaskType::MATRIX->SPATIAL,
+                'type' => TaskType::SPATIAL->value,
                 'description' => 'Tarea que evalúa la capacidad de percibir, analizar y manipular mentalmente objetos en el espacio. Mide las habilidades de rotación mental, visualización espacial y relaciones espaciales.',
                 'instructions' => 'Se te presentarán figuras y formas que deberás analizar espacialmente. Algunas tareas requerirán que imagines cómo se verían los objetos desde diferentes perspectivas o cómo encajarían diferentes piezas. Visualiza mentalmente las transformaciones antes de responder.'
             ]
